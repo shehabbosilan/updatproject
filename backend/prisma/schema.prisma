@@ -1,0 +1,162 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String
+  createdAt DateTime @default(now())
+
+  products         Product[]
+  customers        Customer[]
+  suppliers        Supplier[]
+  sales            Sale[]
+  saleItems        SaleItem[]
+  payments         Payment[]
+  supplierPayments SupplierPayment[]
+  treasury         Treasury[]
+
+  @@map("tenants")
+}
+
+model Product {
+  id                  Int      @id @default(autoincrement())
+  tenantId            Int      @map("tenant_id")
+  name                String
+  category            String
+  unit                String
+  cost_price          Float
+  selling_price       Float
+  low_stock_threshold Int?
+  description         String?
+  expire_date         String?
+  
+  tenant              Tenant   @relation(fields: [tenantId], references: [id])
+  saleItems           SaleItem[]
+
+  @@index([tenantId])
+  @@map("products")
+}
+
+model Customer {
+  id              Int      @id @default(autoincrement())
+  tenantId        Int      @map("tenant_id")
+  name            String
+  phone           String?
+  address         String?
+  debt            Float?   @default(0)
+  total_purchases Float?   @default(0)
+
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+  sales           Sale[]
+  payments        Payment[]
+
+  @@index([tenantId])
+  @@map("customers")
+}
+
+model Supplier {
+  id                Int      @id @default(autoincrement())
+  tenantId          Int      @map("tenant_id")
+  name              String
+  phone             String?  
+  email             String?
+  address           String?
+  total_purchases   Float?   @default(0)
+  total_paid        Float?   @default(0)
+  remaining_balance Float?   @default(0)
+
+  tenant            Tenant   @relation(fields: [tenantId], references: [id])
+  payments          SupplierPayment[]
+
+  @@index([tenantId])
+  @@map("suppliers")
+}
+
+model Treasury {
+  id              Int      @id @default(autoincrement())
+  tenantId        Int      @map("tenant_id")
+  date            String
+  type            String
+  amount          Float
+  description     String?
+  category        String?
+  reference_id    String?
+  running_balance Float?
+
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@map("treasury")
+}
+
+model Sale {
+  id            Int      @id @default(autoincrement())
+  tenantId      Int      @map("tenant_id")
+  customer_id   Int?
+  customer_name String?
+  total         Float
+  paid          Float    @default(0)
+  remaining     Float    @default(0)
+  status        String?  @default("UNPAID")
+  date          String
+  is_deleted    Int?     @default(0)
+
+  tenant        Tenant   @relation(fields: [tenantId], references: [id])
+  customer      Customer? @relation(fields: [customer_id], references: [id])
+  items         SaleItem[]
+
+  @@index([tenantId])
+  @@map("sales")
+}
+
+model SaleItem {
+  id         Int      @id @default(autoincrement())
+  tenantId   Int      @map("tenant_id")
+  sale_id    Int
+  product_id Int
+  quantity   Int
+  price      Float
+
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+  sale       Sale     @relation(fields: [sale_id], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [product_id], references: [id])
+
+  @@index([tenantId])
+  @@map("sale_items")
+}
+
+model Payment {
+  id          Int      @id @default(autoincrement())
+  tenantId    Int      @map("tenant_id")
+  customer_id Int
+  amount      Float
+  date        String
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  customer    Customer @relation(fields: [customer_id], references: [id])
+
+  @@index([tenantId])
+  @@map("payments")
+}
+
+model SupplierPayment {
+  id          Int      @id @default(autoincrement())
+  tenantId    Int      @map("tenant_id")
+  supplier_id Int
+  amount      Float
+  date        String
+  note        String?
+
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  supplier    Supplier @relation(fields: [supplier_id], references: [id])
+
+  @@index([tenantId])
+  @@map("supplier_payments")
+}
