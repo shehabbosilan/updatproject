@@ -1,15 +1,8 @@
 <template>
-  <main class="main-content">
+  <div class="main-content">
     <div id="page-content" class="page-content">
       <div class="suppliers-page">
-        <div
-          class="card-header"
-          style="
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-          "
-        >
+        <div class="sup-page-header">
           <h1 class="page-title">{{ $t('suppliers.payable') }}</h1>
           <button class="btn btn-primary" @click="showAddSupplierModal = true">
             {{ $t('suppliers.add') }}
@@ -17,15 +10,7 @@
         </div>
 
         <!--  TOTAL OVERVIEW (Quick Stats) -->
-        <div
-          class="stats-grid mini-stats"
-          style="
-            margin-bottom: 20px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-          "
-        >
+        <div class="mini-stats">
           <div class="stat-card">
             <div class="stat-label">{{ $t('suppliers.owed') }}</div>
             <div class="stat-value text-danger">
@@ -42,19 +27,14 @@
           <div class="search-bar">
             <input
               type="text"
+              class="form-control"
               :placeholder="$t('common.search_placeholder')"
               v-model="searchQuery"
-              style="
-                width: 100%;
-                padding: 10px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-              "
             />
           </div>
 
           <div class="table-container">
-            <table class="table">
+            <table class="data-table">
               <thead>
                 <tr>
                   <th>{{ $t('common.name') }}</th>
@@ -267,7 +247,7 @@
         </div>
       </div>
     </div>
-  </main>
+  </div>
 </template>
 
 <script>
@@ -417,85 +397,115 @@ export default {
 </script>
 
 <style scoped>
+.sup-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.mini-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.search-bar { margin-bottom: 14px; }
+
+.stat-card {
+  background: white;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  text-align: center;
+  min-width: 0;
+}
+.stat-label { font-size: 0.78rem; color: var(--text-muted); font-weight: 600; margin-bottom: 4px; }
+.stat-value { font-size: 1.2rem; font-weight: 800; }
+.text-danger { color: var(--danger); }
+
+.table-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.btn-icon {
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 5px 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  min-width: 34px;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-icon:hover { background: var(--bg-muted); }
+
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   background: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 2000;
+  padding: 16px;
 }
 .modal-card {
   background: white;
-  padding: 25px;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 500px;
+  padding: 24px;
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
 }
-.mini-modal {
-  max-width: 400px;
-}
-.wide-modal {
-  max-width: 700px;
-}
+.mini-modal { max-width: 380px; }
+.wide-modal  { max-width: 660px; }
+
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 15px;
-  margin-bottom: 15px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 12px;
+  margin-bottom: 16px;
 }
 .close-btn {
   background: none;
   border: none;
-  font-size: 1.5em;
+  font-size: 1.5rem;
   cursor: pointer;
+  line-height: 1;
+  padding: 4px;
+  min-width: 32px;
+  min-height: 32px;
 }
-.form-group {
-  margin-bottom: 15px;
+
+.modal-footer {
+  margin-top: 16px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
-.form-group label {
-  display: block;
-  font-size: 0.9em;
-  color: #666;
-  margin-bottom: 5px;
+
+.btn-block { width: 100%; }
+.mini-table { font-size: 0.88rem; }
+
+@media (max-width: 768px) {
+  .sup-page-header { flex-direction: column; align-items: stretch; }
+  .sup-page-header .btn { width: 100%; }
+  .mini-stats { grid-template-columns: 1fr 1fr; }
+  .table-actions { flex-wrap: nowrap; }
+  .modal-footer { justify-content: stretch; }
+  .modal-footer .btn { flex: 1; }
 }
-.form-group input {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-}
-.stat-card {
-  background: white;
-  padding: 15px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  text-align: center;
-}
-.stat-label {
-  font-size: 0.8em;
-  color: #666;
-}
-.stat-value {
-  font-size: 1.2em;
-  font-weight: bold;
-}
-.text-danger {
-  color: #e74c3c;
-}
-.table-actions .btn {
-  margin-right: 5px;
-}
-.btn-block {
-  width: 100%;
-}
-.mini-table {
-  font-size: 0.9em;
+
+@media (max-width: 480px) {
+  .mini-stats { grid-template-columns: 1fr; }
 }
 </style>

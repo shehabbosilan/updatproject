@@ -2,21 +2,28 @@
   <div class="app-wrapper">
     <!-- Header -->
     <HederHead 
-      :sidebarOpen="sidebarOpen" 
+      :isSidebarOpen="isSidebarOpen" 
       :currentPage="pages"
       @toggle-sidebar="toggleSidebar" 
     />
 
     <div class="main-layout">
+      <!-- Mobile sidebar backdrop -->
+      <div 
+        v-if="isSidebarOpen && isMobile" 
+        class="sidebar-backdrop" 
+        @click="isSidebarOpen = false"
+      ></div>
+
       <!-- Sidebar -->
       <SidBar
-        :isOpen="sidebarOpen"
+        :isOpen="isSidebarOpen"
         @changePage="selectPage($event)"
         :currentPage="pages"
       />
 
       <!-- Content Area -->
-      <main :class="['main-content', { 'full-width': !sidebarOpen }]">
+      <main :class="['main-content', { 'full-width': !isSidebarOpen }]">
         <div class="page-content">
           <!-- Modals (Add/Edit) -->
           <TheAddform
@@ -51,21 +58,24 @@
 </template>
 
 <script>
-// @ is an alias to /src
+import { defineAsyncComponent, markRaw } from 'vue';
 import HederHead from "@/components/Header_TTT.vue";
 import SidBar from "@/components/SideBar.vue";
-import DashBord from "@/components/DashBord.vue";
-import TheProducts from "@/components/TheProducts.vue";
-import TheInventory from "@/components/TheInventory.vue";
-import TheSales from "@/components/TheSales.vue";
-import ThePurchases from "@/components/ThePurchases.vue";
-import TheCustomers from "@/components/TheCustomers.vue";
-import TheSuppliers from "@/components/TheSuppliers.vue";
-import TheTreasury from "@/components/TheTreasury.vue";
-import TheReports from "@/components/TheReports.vue";
-import TheAddform from "@/components/AddProduct.vue";
-import TheEditform from "@/components/EditeProduct.vue";
 import stMixin from "@/mixins/editProduct";
+
+// Lazy load components for performance
+const DashBord = defineAsyncComponent(() => import("@/components/DashBord.vue"));
+const TheProducts = defineAsyncComponent(() => import("@/components/TheProducts.vue"));
+const TheInventory = defineAsyncComponent(() => import("@/components/TheInventory.vue"));
+const TheSales = defineAsyncComponent(() => import("@/components/TheSales.vue"));
+const ThePurchases = defineAsyncComponent(() => import("@/components/ThePurchases.vue"));
+const TheCustomers = defineAsyncComponent(() => import("@/components/TheCustomers.vue"));
+const TheSuppliers = defineAsyncComponent(() => import("@/components/TheSuppliers.vue"));
+const TheTreasury = defineAsyncComponent(() => import("@/components/TheTreasury.vue"));
+const TheReports = defineAsyncComponent(() => import("@/components/TheReports.vue"));
+const TheOwnerDashboard = defineAsyncComponent(() => import("@/components/TheOwnerDashboard.vue"));
+const TheAddform = defineAsyncComponent(() => import("@/components/AddProduct.vue"));
+const TheEditform = defineAsyncComponent(() => import("@/components/EditeProduct.vue"));
 
 export default {
   name: "HomeView",
@@ -81,13 +91,15 @@ export default {
     TheSuppliers,
     TheTreasury,
     TheReports,
+    TheOwnerDashboard,
     TheAddform,
     TheEditform,
   },
 
   data() {
     return {
-      sidebarOpen: true,
+      isSidebarOpen: window.innerWidth > 768,
+      isMobile: window.innerWidth <= 768,
       pages: "dashboard",
       form: "",
     };
@@ -97,6 +109,7 @@ export default {
     currentComponent() {
       const pageMap = {
         'dashboard': 'DashBord',
+        'owner-dashboard': 'TheOwnerDashboard',
         'products': 'TheProducts',
         'inventory': 'TheInventory',
         'sales': 'TheSales',
@@ -112,23 +125,31 @@ export default {
 
   methods: {
     toggleSidebar() {
-      this.sidebarOpen = !this.sidebarOpen;
+      this.isSidebarOpen = !this.isSidebarOpen;
     },
     selectPage(page) {
       this.pages = page;
-      if (window.innerWidth <= 768) {
-        this.sidebarOpen = false;
+      if (this.isMobile) {
+        this.isSidebarOpen = false;
       }
     },
     veiwShowform(add) {
       this.form = add;
     },
+    handleResize() {
+      this.isMobile = window.innerWidth <= 768;
+      if (!this.isMobile) {
+        this.isSidebarOpen = true;
+      }
+    }
   },
 
   mounted() {
-    if (window.innerWidth <= 768) {
-      this.sidebarOpen = false;
-    }
+    window.addEventListener('resize', this.handleResize);
+  },
+
+  beforeUnmount() {
+    window.removeEventListener('resize', this.handleResize);
   },
   mixins: [stMixin],
 };

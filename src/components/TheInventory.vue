@@ -43,7 +43,13 @@
           </thead>
 
           <tbody>
-            <tr v-if="filteredInventory.length === 0">
+            <tr v-if="isLoading">
+              <td><div class="skeleton"></div></td>
+              <td><div class="skeleton"></div></td>
+              <td><div class="skeleton"></div></td>
+              <td><div class="skeleton"></div></td>
+            </tr>
+            <tr v-else-if="filteredInventory.length === 0">
               <td colspan="4" class="text-center">{{ $t('common.no_records') }}</td>
             </tr>
 
@@ -82,12 +88,19 @@
 </template>
 
 <script>
+import { useAppSystem } from '@/composables/useAppSystem';
+
 export default {
+  setup() {
+    const { toast, setLoading } = useAppSystem();
+    return { toast, setLoading };
+  },
   data() {
     return {
       inventory: [],
       search: "",
       statusFilter: "all",
+      isLoading: false,
     };
   },
   mounted() {
@@ -95,11 +108,18 @@ export default {
   },
   methods: {
     async fetchInventory() {
+      this.isLoading = true;
+      this.setLoading(true);
       try {
         const res = await fetch(`${process.env.VUE_APP_API_URL}/product`);
+        if (!res.ok) throw new Error("Failed to fetch");
         this.inventory = await res.json();
       } catch (error) {
         console.error(error);
+        this.toast.error(this.$t('common.error'));
+      } finally {
+        this.isLoading = false;
+        this.setLoading(false);
       }
     },
     isExpired(item) {

@@ -5,15 +5,17 @@
       <span class="logo-text">{{ $t('common.app_name') }}</span>
     </div>
     
-    <nav class="sidebar-nav">
+    <nav class="sidebar-nav" role="navigation" :aria-label="$t('common.navigation')">
       <button
         v-for="item in menuItems"
         :key="item.id"
         :class="['nav-item', { active: currentPage === item.id }]"
         @click="selectPage(item.id)"
+        :aria-current="currentPage === item.id ? 'page' : null"
+        :aria-label="item.title || $t(item.id + '.title')"
       >
-        <span class="nav-icon">{{ item.icon }}</span>
-        <span class="nav-text">{{ $t(item.id + '.title') }}</span>
+        <span class="nav-icon" aria-hidden="true">{{ item.icon }}</span>
+        <span class="nav-text">{{ item.title || $t(item.id + '.title') }}</span>
       </button>
     </nav>
   </aside>
@@ -23,8 +25,11 @@
 export default {
   props: ["isOpen", "currentPage"],
   data() {
-    return {
-      menuItems: [
+    return {};
+  },
+  computed: {
+    menuItems() {
+      const items = [
         { id: 'dashboard', icon: '📊' },
         { id: 'products', icon: '📦' },
         { id: 'inventory', icon: '📋' },
@@ -34,8 +39,14 @@ export default {
         { id: 'suppliers', icon: '🏭' },
         { id: 'treasury', icon: '👛' },
         { id: 'reports', icon: '📈' },
-      ]
-    };
+      ];
+      
+      const role = localStorage.getItem("role");
+      if (role === "owner") {
+        items.unshift({ id: 'owner-dashboard', icon: '👑', title: 'System Owner' });
+      }
+      return items;
+    }
   },
   methods: {
     selectPage(page) {
@@ -57,17 +68,28 @@ export default {
   position: fixed;
   top: 0;
   z-index: 1001;
+  left: 0;
 }
 
-html[dir="ltr"] .sidebar { left: 0; }
-html[dir="rtl"] .sidebar { right: 0; }
-
-.sidebar-closed {
+/* LTR logic */
+html[dir="ltr"] .sidebar {
+  left: 0;
+  right: auto;
+}
+html[dir="ltr"] .sidebar.sidebar-closed {
   transform: translateX(-100%);
 }
-html[dir="rtl"] .sidebar-closed {
+
+/* RTL logic */
+html[dir="rtl"] .sidebar {
+  right: 0;
+  left: auto;
+}
+html[dir="rtl"] .sidebar.sidebar-closed {
   transform: translateX(100%);
 }
+
+
 
 .sidebar-logo {
   height: var(--header-height);

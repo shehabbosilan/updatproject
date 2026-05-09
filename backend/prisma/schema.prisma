@@ -8,10 +8,23 @@ datasource db {
 }
 
 model Tenant {
-  id        Int      @id @default(autoincrement())
-  username  String   @unique
-  password  String
-  createdAt DateTime @default(now())
+  id               Int      @id @default(autoincrement())
+  email            String
+  password         String
+  storeName        String?
+  role             String   @default("admin")
+  status           String   @default("active")
+  plan             String   @default("free")
+  is_deleted       Boolean  @default(false)
+  deleted_at       DateTime?
+  restored_at      DateTime?
+  restored_count   Int      @default(0)
+  resetToken       String?
+  resetTokenExpiry DateTime?
+  restoreToken     String?
+  restoreTokenExpiry DateTime?
+  expiresAt        DateTime?
+  createdAt        DateTime @default(now())
 
   products         Product[]
   customers        Customer[]
@@ -21,8 +34,74 @@ model Tenant {
   payments         Payment[]
   supplierPayments SupplierPayment[]
   treasury         Treasury[]
+  aiAlerts         AIAlert[]
+  dailyStats       DailyStats[]
+  analyticsFeedback AnalyticsFeedback[]
 
   @@map("tenants")
+}
+
+model AIAlert {
+  id              Int      @id @default(autoincrement())
+  tenantId        Int      @map("tenant_id")
+  type            String   // expiry | stock | debt | dead_stock
+  referenceId     String   @map("reference_id") // Required to prevent NULL constraint issues
+  message         String
+  priority        String   @default("normal") // normal | urgent | critical
+  score           Int      @default(0)       // 0-100 for ranking
+  metadata        Json?    // Standardized per type
+  isRead          Boolean  @default(false)
+  lastTriggeredAt DateTime @default(now())
+  createdAt       DateTime @default(now())
+
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, type, referenceId])
+  @@index([tenantId])
+  @@map("ai_alerts")
+}
+
+model DailyStats {
+  id             Int      @id @default(autoincrement())
+  tenantId       Int      @map("tenant_id")
+  date           String   // YYYY-MM-DD
+  totalSales     Int      @default(0)
+  totalRevenue   Float    @default(0)
+  totalExpenses  Float    @default(0)
+  totalProfit    Float    @default(0)
+  createdAt      DateTime @default(now())
+
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, date])
+  @@index([tenantId, date])
+  @@map("daily_stats")
+}
+
+model AnalyticsFeedback {
+  id               Int      @id @default(autoincrement())
+  tenantId         Int      @map("tenant_id")
+  recommendationId String   @map("recommendation_id") // Reference to the original alert/insight
+  actionTaken      Boolean  @default(false)
+  outcomeScore     Float?   // -1.0 to 1.0 (Revenue change, stock optimization success)
+  metadata         Json?    // Context at time of feedback
+  createdAt        DateTime @default(now())
+
+  tenant           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, recommendationId])
+  @@map("analytics_feedback")
+}
+
+model RecommendationRule {
+  id           Int      @id @default(autoincrement())
+  ruleType     String   @unique // inventory_restock | slow_mover_discount | vip_retention
+  weight       Float    @default(1.0)
+  successCount Int      @default(0)
+  failureCount Int      @default(0)
+  updatedAt    DateTime @updatedAt
+
+  @@map("recommendation_rules")
 }
 
 model Product {
@@ -33,14 +112,16 @@ model Product {
   unit                String
   cost_price          Float
   selling_price       Float
+  quantity            Int      @default(0)
   low_stock_threshold Int?
   description         String?
   expire_date         String?
   
-  tenant              Tenant   @relation(fields: [tenantId], references: [id])
+  tenant              Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   saleItems           SaleItem[]
 
   @@index([tenantId])
+  @@index([expire_date])
   @@map("products")
 }
 
@@ -53,7 +134,7 @@ model Customer {
   debt            Float?   @default(0)
   total_purchases Float?   @default(0)
 
-  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   sales           Sale[]
   payments        Payment[]
 
@@ -72,7 +153,7 @@ model Supplier {
   total_paid        Float?   @default(0)
   remaining_balance Float?   @default(0)
 
-  tenant            Tenant   @relation(fields: [tenantId], references: [id])
+  tenant            Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   payments          SupplierPayment[]
 
   @@index([tenantId])
@@ -90,7 +171,7 @@ model Treasury {
   reference_id    String?
   running_balance Float?
 
-  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@map("treasury")
@@ -108,11 +189,12 @@ model Sale {
   date          String
   is_deleted    Int?     @default(0)
 
-  tenant        Tenant   @relation(fields: [tenantId], references: [id])
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   customer      Customer? @relation(fields: [customer_id], references: [id])
   items         SaleItem[]
 
   @@index([tenantId])
+  @@index([date])
   @@map("sales")
 }
 
@@ -124,11 +206,12 @@ model SaleItem {
   quantity   Int
   price      Float
 
-  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   sale       Sale     @relation(fields: [sale_id], references: [id], onDelete: Cascade)
   product    Product  @relation(fields: [product_id], references: [id])
 
   @@index([tenantId])
+  @@index([product_id])
   @@map("sale_items")
 }
 
@@ -139,7 +222,7 @@ model Payment {
   amount      Float
   date        String
 
-  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   customer    Customer @relation(fields: [customer_id], references: [id])
 
   @@index([tenantId])
@@ -154,9 +237,20 @@ model SupplierPayment {
   date        String
   note        String?
 
-  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   supplier    Supplier @relation(fields: [supplier_id], references: [id])
 
   @@index([tenantId])
   @@map("supplier_payments")
 }
+
+model InviteCode {
+  id        Int      @id @default(autoincrement())
+  code      String   @unique
+  used      Boolean  @default(false)
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@map("invite_codes")
+}
+

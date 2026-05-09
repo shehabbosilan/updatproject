@@ -39,7 +39,7 @@
               <th>{{ $t('products.category') }}</th>
               <th class="text-center">{{ $t('products.unit') }}</th>
               <th class="text-center">{{ $t('inventory.stock') }}</th>
-              <th class="text-right">{{ $t('products.selling_price') }}</th>
+              <th class="text-end">{{ $t('products.selling_price') }}</th>
               <th class="text-center">{{ $t('common.actions') }}</th>
             </tr>
           </thead>
@@ -56,7 +56,7 @@
               <td class="text-center font-bold" :class="product.low_stock_threshold <= 5 ? 'text-danger' : ''">
                 {{ product.low_stock_threshold }}
               </td>
-              <td class="text-right font-bold text-primary">
+              <td class="text-end font-bold text-primary">
                 {{ $t('common.egp') }} {{ product.selling_price.toFixed(2) }}
               </td>
               <td class="text-center">
@@ -134,24 +134,28 @@ export default {
 <style scoped>
 .products-card { padding: 0; }
 .card-controls {
-  padding: 20px;
+  padding: 16px 20px;
   display: flex;
-  gap: 16px;
+  gap: 14px;
   background: var(--bg-muted);
   border-bottom: 1px solid var(--border-color);
+  flex-wrap: wrap;
 }
-.search-box { flex: 1; }
-.filter-box { width: 220px; }
+.search-box { flex: 1; min-width: 160px; }
+.filter-box { width: min(100%, 220px); }
 
 .action-buttons { display: flex; gap: 8px; justify-content: center; }
-.text-danger { color: var(--danger); }
+.text-danger  { color: var(--danger); }
 .text-primary { color: var(--primary); }
-.font-bold { font-weight: 700; }
-.text-right { text-align: right; }
-.text-center { text-align: center; }
+.font-bold    { font-weight: 700; }
+.text-center  { text-align: center; }
+
+/* RTL-aware end alignment */
+.text-end { text-align: end; }
 
 @media (max-width: 768px) {
   .card-controls { flex-direction: column; }
   .filter-box { width: 100%; }
+  .search-box { min-width: 0; }
 }
 </style>

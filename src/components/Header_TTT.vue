@@ -1,36 +1,62 @@
 <template>
-  <header :class="['app-header', { 'sidebar-shifted': sidebarOpen }]">
+  <header :class="['app-header', { 'sidebar-shifted': isSidebarOpen }]">
     <div class="header-content">
       <div class="header-left">
-        <button class="menu-toggle" @click="$emit('toggle-sidebar')">
-          <span class="icon">☰</span>
+        <button 
+          class="menu-toggle" 
+          @click="$emit('toggle-sidebar')"
+          :aria-label="$t('common.toggle_sidebar')"
+          :aria-expanded="isSidebarOpen"
+          type="button"
+        >
+          <span class="icon" aria-hidden="true">☰</span>
         </button>
-        <div class="breadcrumb">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
           <span class="breadcrumb-item">{{ $t('common.app_name') }}</span>
-          <span class="breadcrumb-separator">/</span>
+          <span class="breadcrumb-separator" aria-hidden="true">/</span>
           <span class="breadcrumb-current">{{ $t(currentPage + '.title') }}</span>
-        </div>
+        </nav>
       </div>
       
       <div class="header-right">
         <div class="lang-picker">
-          <span class="current-lang-flag">{{ currentLang === 'ar' ? '🇪🇬' : '🇺🇸' }}</span>
-          <select v-model="$i18n.locale" class="lang-select">
-            <option value="en">English</option>
-            <option value="ar">العربية</option>
+          <span class="current-lang-flag" aria-hidden="true">{{ currentLang === 'ar' ? '🇪🇬' : '🇺🇸' }}</span>
+          <select 
+            v-model="$i18n.locale" 
+            class="lang-select"
+            :aria-label="$t('common.select_language')"
+          >
+            <option value="en">EN</option>
+            <option value="ar">AR</option>
           </select>
         </div>
         
-        <div class="user-profile" @click="toggleUserDropdown" ref="userProfile" style="position: relative; cursor: pointer;">
-          <div class="user-avatar">{{ userInitials }}</div>
+        <div 
+          class="user-profile" 
+          @click="toggleUserDropdown" 
+          @keydown.enter="toggleUserDropdown"
+          @keydown.space.prevent="toggleUserDropdown"
+          ref="userProfile" 
+          tabindex="0"
+          role="button"
+          :aria-label="$t('common.user_profile')"
+          :aria-expanded="isUserDropdownOpen"
+          :aria-haspopup="true"
+          style="position: relative; cursor: pointer;"
+        >
+          <div class="user-avatar" aria-hidden="true">{{ userInitials }}</div>
           <div class="user-info">
-            <span class="user-name">{{ username }}</span>
-            <span class="user-role">Shop Owner</span>
+            <span class="user-name">{{ email }}</span>
+            <span class="user-role">{{ $t('common.shop_owner') }}</span>
           </div>
           
-          <div v-if="isUserDropdownOpen" class="user-dropdown">
-            <button class="dropdown-item text-danger" @click.stop="handleLogout">
-              <span class="icon">🚪</span> Logout
+          <div v-if="isUserDropdownOpen" class="user-dropdown" role="menu">
+            <button 
+              class="dropdown-item text-danger" 
+              @click.stop="handleLogout"
+              role="menuitem"
+            >
+              <span class="icon" aria-hidden="true">🚪</span> {{ $t('auth.logout') }}
             </button>
           </div>
         </div>
@@ -41,7 +67,7 @@
 
 <script>
 export default {
-  props: ["sidebarOpen", "currentPage"],
+  props: ["isSidebarOpen", "currentPage"],
   data() {
     return {
       isUserDropdownOpen: false
@@ -49,11 +75,11 @@ export default {
   },
   computed: {
     currentLang() { return this.$i18n.locale; },
-    username() {
-      return localStorage.getItem('username') || 'User';
+    email() {
+      return localStorage.getItem('email') || 'User';
     },
     userInitials() {
-      const name = this.username;
+      const name = this.email;
       return name ? name.substring(0, 2).toUpperCase() : 'US';
     }
   },
@@ -82,7 +108,7 @@ export default {
           console.error("Logout request failed:", e);
         } finally {
           localStorage.removeItem('jwt_token');
-          localStorage.removeItem('username');
+          localStorage.removeItem('email');
           this.$router.push('/login');
         }
       }
@@ -211,16 +237,39 @@ export default {
 @media (min-width: 769px) {
   html[dir="ltr"] .app-header { margin-left: var(--sidebar-width); }
   html[dir="rtl"] .app-header { margin-right: var(--sidebar-width); }
-  
+
   html[dir="ltr"] .sidebar-shifted { margin-left: var(--sidebar-width); }
   html[dir="rtl"] .sidebar-shifted { margin-right: var(--sidebar-width); }
-  
-  /* If sidebar is closed, header should expand */
-  /* This requires tracking sidebar state in parent and passing it */
 }
 
 @media (max-width: 768px) {
+  /* Sidebar no longer pushes header on mobile */
+  html[dir="ltr"] .app-header,
+  html[dir="rtl"] .app-header { margin: 0 !important; }
+
+  /* Hide breadcrumb app name on mobile */
   .breadcrumb-item { display: none; }
   .breadcrumb-separator { display: none; }
+
+  /* Compact header layout */
+  .header-content { padding: 0 12px; }
+  .header-right { gap: 12px; }
+
+  /* Hide email text, show only avatar */
+  .user-info { display: none; }
+
+  /* Compact lang picker */
+  .lang-picker { 
+    padding: 4px 8px; 
+    gap: 4px;
+    border-radius: var(--radius-md);
+  }
+  .lang-select { font-size: 0.75rem; }
 }
+
+@media (max-width: 480px) {
+  .user-name { max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .breadcrumb-current { font-size: 0.85rem; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+
 </style>

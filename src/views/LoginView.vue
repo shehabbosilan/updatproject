@@ -1,85 +1,106 @@
 <template>
   <div class="auth-container">
     <div class="auth-card">
-      <h2 class="auth-title">Login to ERP</h2>
+      <!-- Logo -->
+      <div class="auth-logo">🌾</div>
+      <h2 class="auth-title">{{ $t('common.app_name') }}</h2>
+      <p class="auth-subtitle">{{ $t('auth.login') }}</p>
+
       <form @submit.prevent="handleLogin" class="auth-form">
         <div class="form-group">
-          <label for="username">Username</label>
-          <input 
-            type="text" 
-            id="username" 
-            v-model="username" 
-            required 
-            placeholder="Enter your username"
+          <label class="form-label" for="email">{{ $t('auth.email') }}</label>
+          <input
+            type="email"
+            id="email"
+            class="form-control"
+            v-model="email"
+            required
+            :placeholder="$t('auth.email')"
+            autocomplete="email"
           />
         </div>
+
         <div class="form-group">
-          <label for="password">Password</label>
-          <input 
-            type="password" 
-            id="password" 
-            v-model="password" 
-            required 
-            placeholder="Enter your password"
+          <label class="form-label" for="password">{{ $t('auth.password') }}</label>
+          <input
+            type="password"
+            id="password"
+            class="form-control"
+            v-model="password"
+            required
+            :placeholder="$t('auth.password')"
+            autocomplete="current-password"
           />
+          <div class="forgot-row">
+            <router-link to="/forgot-password" class="forgot-link">
+              {{ $t('auth.forgot_password') }}
+            </router-link>
+          </div>
         </div>
-        <div v-if="errorMessage" class="error-message">
-          {{ errorMessage }}
-        </div>
-        <button type="submit" class="auth-btn" :disabled="isLoading">
-          {{ isLoading ? 'Logging in...' : 'Login' }}
-        </button>
+
+        <div v-if="errorMessage" class="error-message">{{ errorMessage }}</div>
+
+        <BaseButton 
+          type="submit" 
+          variant="primary" 
+          class="auth-btn" 
+          :loading="isLoading"
+        >
+          {{ $t('auth.login') }}
+        </BaseButton>
       </form>
+
       <div class="auth-footer">
-        Don't have a shop? <router-link to="/register">Register here</router-link>
+        <router-link to="/register" class="auth-link">{{ $t('auth.register') }}</router-link>
       </div>
     </div>
   </div>
 </template>
 
 <script>
+import { useAppSystem } from '@/composables/useAppSystem';
+import BaseButton from '@/components/common/BaseButton.vue';
+
 export default {
   name: 'LoginView',
+  components: { BaseButton },
+  setup() {
+    const { toast, setLoading } = useAppSystem();
+    return { toast, setLoading };
+  },
   data() {
-    return {
-      username: '',
-      password: '',
-      errorMessage: '',
-      isLoading: false
-    }
+    return { email: '', password: '', errorMessage: '', isLoading: false };
   },
   methods: {
     async handleLogin() {
       this.isLoading = true;
       this.errorMessage = '';
-      
+      this.setLoading(true);
+
       try {
-        // Bypass global interceptor temporarily if needed, 
-        // but global interceptor handles this gracefully
         const response = await fetch(`${process.env.VUE_APP_API_URL}/auth/login`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            username: this.username,
-            password: this.password
-          })
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: this.email, password: this.password })
         });
-
         const data = await response.json();
-
         if (response.ok) {
           localStorage.setItem('jwt_token', data.token);
-          localStorage.setItem('username', data.username);
+          localStorage.setItem('email', data.email);
+          localStorage.setItem('role', data.role);
+          if (data.storeName) localStorage.setItem('store_name', data.storeName);
+          this.toast.success(this.$t('auth.login_success') || 'Welcome back!');
           this.$router.push('/');
         } else {
-          this.errorMessage = data.message || 'Login failed';
+          this.errorMessage = data.message || this.$t('auth.login_error');
+          this.toast.error(this.errorMessage);
         }
       } catch (err) {
-        this.errorMessage = 'Network error. Please try again.';
+        this.errorMessage = this.$t('auth.network_error');
+        this.toast.error(this.errorMessage);
       } finally {
         this.isLoading = false;
+        this.setLoading(false);
       }
     }
   }
@@ -91,65 +112,87 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
-  background-color: #f5f7fa;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  padding: 20px;
 }
+
 .auth-card {
   background: white;
-  padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 2.5rem 2rem;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
+  text-align: center;
 }
+
+.auth-logo {
+  font-size: 3rem;
+  margin-bottom: 8px;
+}
+
 .auth-title {
-  text-align: center;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--text-main);
+  margin-bottom: 4px;
+}
+
+.auth-subtitle {
+  font-size: 0.9rem;
+  color: var(--text-muted);
   margin-bottom: 1.5rem;
-  color: #333;
 }
-.form-group {
-  margin-bottom: 1rem;
+
+.auth-form { text-align: start; }
+
+.forgot-row {
+  margin-top: 6px;
+  text-align: end;
 }
-.form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  color: #666;
-}
-.form-group input {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 1rem;
-}
-.auth-btn {
-  width: 100%;
-  padding: 0.75rem;
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-size: 1rem;
-  cursor: pointer;
-  margin-top: 1rem;
-}
-.auth-btn:disabled {
-  background-color: #a5d6a7;
-  cursor: not-allowed;
-}
-.error-message {
-  color: #f44336;
-  margin-top: 1rem;
-  text-align: center;
-  font-size: 0.9rem;
-}
-.auth-footer {
-  margin-top: 1.5rem;
-  text-align: center;
-  font-size: 0.9rem;
-}
-.auth-footer a {
-  color: #2196F3;
+
+.forgot-link {
+  font-size: 0.82rem;
+  color: var(--primary);
   text-decoration: none;
 }
+.forgot-link:hover { text-decoration: underline; }
+
+.error-message {
+  color: var(--danger);
+  background: #fee2e2;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  margin-bottom: 12px;
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.auth-btn {
+  width: 100%;
+  margin-top: 8px;
+  padding: 14px;
+  font-size: 1rem;
+  min-height: 48px;
+  border-radius: var(--radius-md);
+}
+
+.auth-footer {
+  margin-top: 1.5rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.auth-link {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+.auth-link:hover { text-decoration: underline; }
+
+@media (max-width: 480px) {
+  .auth-card { padding: 2rem 1.25rem; }
+}
 </style>
+

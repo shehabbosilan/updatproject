@@ -36,7 +36,12 @@ const messages = {
       price: "Price",
       category: "Category",
       from: "From",
-      to: "To"
+      to: "To",
+      toggle_sidebar: "Toggle Sidebar",
+      navigation: "Main Navigation",
+      select_language: "Select Language",
+      user_profile: "User Profile",
+      shop_owner: "Shop Owner"
     },
     dashboard: {
       title: "Dashboard Overview",
@@ -66,7 +71,7 @@ const messages = {
       expired: "Expired",
       low_stock: "Low Stock",
       expiry_date: "Expiry Date",
-      threshold: "Low Stock Threshold",
+      threshold: "Stock",
       status: "Inventory Status"
     },
     products: {
@@ -157,6 +162,37 @@ const messages = {
       credit: "Credit (-)",
       invoice: "Invoice",
       payment: "Payment"
+    },
+    ownerDashboard: {
+      title: "System Owner Dashboard",
+      generateInvite: "Generate Invite Code",
+      newInviteCode: "New Invite Code",
+      inviteExpiresIn: "This code expires in 7 days.",
+      email: "Email",
+      role: "Role",
+      status: "Status",
+      createdAt: "Created At",
+      stats: "Activity",
+      actions: "Actions",
+      suspend: "Suspend",
+      activate: "Activate",
+      delete: "Delete",
+      noTenants: "No tenants found."
+    },
+    auth: {
+      login: "Login",
+      register: "Register",
+      email: "Email",
+      password: "Password",
+      store_name: "Store Name",
+      invite_code: "Invite Code",
+      forgot_password: "Forgot Password?",
+      send_reset: "Send Reset Link",
+      reset_password: "Reset Password",
+      confirm_password: "Confirm Password",
+      login_error: "Invalid credentials",
+      register_error: "Registration failed",
+      network_error: "Network error. Please try again."
     }
   },
   ar: {
@@ -194,7 +230,12 @@ const messages = {
       price: "السعر",
       category: "الفئة",
       from: "من",
-      to: "إلى"
+      to: "إلى",
+      toggle_sidebar: "تبديل الشريط الجانبي",
+      navigation: "القائمة الرئيسية",
+      select_language: "اختر اللغة",
+      user_profile: "ملف المستخدم",
+      shop_owner: "صاحب المتجر"
     },
     dashboard: {
       title: "لوحة التحكم",
@@ -224,7 +265,7 @@ const messages = {
       expired: "منتهي الصلاحية",
       low_stock: "مخزون منخفض",
       expiry_date: "تاريخ الانتهاء",
-      threshold: "حد إعادة الطلب",
+      threshold: "مخزون",
       status: "حالة المخزون"
     },
     products: {
@@ -315,15 +356,49 @@ const messages = {
       credit: "دائن (-)",
       invoice: "فاتورة",
       payment: "سداد"
+    },
+    ownerDashboard: {
+      title: "لوحة تحكم المالك",
+      generateInvite: "إنشاء كود دعوة",
+      newInviteCode: "كود الدعوة الجديد",
+      inviteExpiresIn: "ينتهي صلاحية هذا الكود خلال 7 أيام.",
+      email: "البريد الإلكتروني",
+      role: "الدور",
+      status: "الحالة",
+      createdAt: "تاريخ الإنشاء",
+      stats: "الإحصاءات",
+      actions: "الإجراءات",
+      suspend: "تعليق",
+      activate: "تفعيل",
+      delete: "حذف",
+      noTenants: "لا توجد متاجر."
+    },
+    auth: {
+      login: "تسجيل الدخول",
+      register: "تسجيل متجر جديد",
+      email: "البريد الإلكتروني",
+      password: "كلمة المرور",
+      store_name: "اسم المتجر",
+      invite_code: "كود الدعوة",
+      forgot_password: "نسيت كلمة المرور؟",
+      send_reset: "إرسال رابط الاسترداد",
+      reset_password: "إعادة تعيين كلمة المرور",
+      confirm_password: "تأكيد كلمة المرور",
+      login_error: "بيانات الدخول غير صحيحة",
+      register_error: "فشل التسجيل",
+      network_error: "خطأ في الشبكة. يرجى المحاولة مرة أخرى."
     }
   }
 };
 
 const i18n = createI18n({
   legacy: false,
-  locale: localStorage.getItem('lang') || 'en',
+  locale: localStorage.getItem('lang') || 'ar',
   fallbackLocale: 'en',
-  messages
+  messages,
+  // Ensure vue-i18n doesn't warn on missing keys in production
+  missingWarn: false,
+  fallbackWarn: false
 });
 
 export default i18n;

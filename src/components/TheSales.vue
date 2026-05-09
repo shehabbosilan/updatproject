@@ -121,9 +121,13 @@
               </div>
             </div>
 
-            <button class="btn btn-primary btn-xl w-full" @click="completeSale">
+            <BaseButton 
+              class="btn-xl w-full" 
+              @click="completeSale"
+              :loading="isSubmitting"
+            >
               🚀 {{ $t('sales.complete') }}
-            </button>
+            </BaseButton>
           </div>
         </div>
       </div>
@@ -132,8 +136,16 @@
 </template>
 
 <script>
+import { useAppSystem } from '@/composables/useAppSystem';
+import BaseButton from '@/components/common/BaseButton.vue';
+
 export default {
   props: ["datas"],
+  components: { BaseButton },
+  setup() {
+    const { toast, setLoading } = useAppSystem();
+    return { toast, setLoading };
+  },
   data() {
     return {
       search: "",
@@ -147,6 +159,7 @@ export default {
         debt: 0,
       },
       paidAmount: 0,
+      isSubmitting: false,
     };
   },
 
@@ -231,12 +244,12 @@ export default {
 
     async completeSale() {
       if (this.cart.length === 0) {
-        alert(this.$t('sales.empty_cart'));
+        this.toast.warn(this.$t('sales.empty_cart'));
         return;
       }
 
       if (this.paidAmount > this.totalPrice) {
-        alert(this.$t('suppliers.debt_warning') || "Paid amount cannot exceed total");
+        this.toast.error(this.$t('suppliers.debt_warning') || "Paid amount cannot exceed total");
         return;
       }
 
@@ -244,36 +257,39 @@ export default {
         this.remainingAmount > 0 &&
         (!this.customer.name || !this.customer.phone)
       ) {
-        alert(this.$t('i18n_key_needed') || "Customer name and phone are required for debt sales");
+        this.toast.warn(this.$t('sales.customer_req') || "Customer details required for debt");
         return;
       }
 
-      if (this.customer.phone) {
-        const custRes = await fetch(`${process.env.VUE_APP_API_URL}/customers`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: this.customer.name || "Unknown",
-            phone: this.customer.phone,
-          }),
-        });
-        const custData = await custRes.json();
-        this.customer.id = custData.id;
-      }
-
-      const saleData = {
-        customer_id: this.customer.id,
-        customer_name: this.customer.name || "Walk-in Customer",
-        total: this.totalPrice,
-        paid: this.paidAmount,
-        items: this.cart.map((i) => ({
-          id: i.id,
-          quantity: i.quantity,
-          selling_price: i.selling_price,
-        })),
-      };
+      this.isSubmitting = true;
+      this.setLoading(true);
 
       try {
+        if (this.customer.phone && !this.customer.id) {
+          const custRes = await fetch(`${process.env.VUE_APP_API_URL}/customers`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: this.customer.name || "Unknown",
+              phone: this.customer.phone,
+            }),
+          });
+          const custData = await custRes.json();
+          this.customer.id = custData.id;
+        }
+
+        const saleData = {
+          customer_id: this.customer.id,
+          customer_name: this.customer.name || "Walk-in Customer",
+          total: this.totalPrice,
+          paid: this.paidAmount,
+          items: this.cart.map((i) => ({
+            id: i.id,
+            quantity: i.quantity,
+            selling_price: i.selling_price,
+          })),
+        };
+
         const res = await fetch(`${process.env.VUE_APP_API_URL}/sales`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -281,21 +297,26 @@ export default {
         });
 
         if (res.ok) {
+          this.toast.success(this.$t('sales.success') || "Sale completed successfully!");
           this.printInvoice();
           this.clearCart();
           this.$emit("fetch-products");
         } else {
-          const err = await res.json();
-          alert(this.$t('common.error') + ": " + err.message);
+          const errData = await res.json();
+          this.toast.error(errData.message || this.$t('common.error'));
         }
       } catch (err) {
         console.error(err);
-        alert(this.$t('common.error'));
+        this.toast.error(this.$t('auth.network_error'));
+      } finally {
+        this.isSubmitting = false;
+        this.setLoading(false);
       }
     },
 
     printInvoice() {
       const date = new Date().toLocaleString();
+      const storeName = localStorage.getItem('store_name') || this.$t('common.app_name');
       const printWindow = window.open("", "", "width=500,height=700");
       const isRtl = document.documentElement.dir === 'rtl';
       const invoiceHTML = `
@@ -305,6 +326,7 @@ export default {
             <style>
               body { font-family: sans-serif; padding: 20px; color: #333; direction: ${isRtl ? 'rtl' : 'ltr'}; }
               .header { text-align: center; margin-bottom: 20px; }
+              .store-name { font-size: 24px; font-weight: 800; margin-bottom: 5px; color: #1e293b; }
               .line { border-top: 1px dashed #000; margin: 10px 0; }
               table { width: 100%; border-collapse: collapse; }
               th, td { padding: 8px; border-bottom: 1px solid #ddd; text-align: ${isRtl ? 'right' : 'left'}; }
@@ -314,7 +336,7 @@ export default {
           </head>
           <body>
             <div class="header">
-              <h2>🌾 ${this.$t('common.app_name')}</h2>
+              <div class="store-name">🌾 ${storeName}</div>
               <p>${isRtl ? 'فاتورة بيع' : 'Sales Invoice'}</p>
             </div>
             <div class="info">
@@ -392,38 +414,41 @@ export default {
 <style scoped>
 .pos-layout {
   display: grid;
-  grid-template-columns: 1fr 400px;
-  gap: 24px;
-  height: calc(100vh - 160px);
+  grid-template-columns: 1fr 380px;
+  gap: 20px;
+  min-height: calc(100vh - 160px);
+  align-items: start;
 }
 
 .products-section {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
 .search-card { padding: 12px; }
 
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
   overflow-y: auto;
-  padding-bottom: 20px;
+  max-height: calc(100vh - 280px);
+  padding-bottom: 12px;
 }
 
 .product-card {
   background: white;
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-color);
-  padding: 16px;
+  padding: 14px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   cursor: pointer;
   transition: all 0.2s;
   box-shadow: var(--shadow-sm);
+  min-height: 90px;
 }
 
 .product-card:hover:not(.out-of-stock) {
@@ -438,54 +463,60 @@ export default {
   cursor: not-allowed;
 }
 
-.product-name { font-weight: 700; color: var(--text-main); margin-bottom: 8px; }
-.product-price { font-weight: 800; color: var(--primary); font-size: 1.1rem; }
-.product-footer { margin-top: 12px; }
+.product-name { font-weight: 700; color: var(--text-main); margin-bottom: 6px; font-size: 0.9rem; }
+.product-price { font-weight: 800; color: var(--primary); font-size: 1rem; }
+.product-footer { margin-top: 10px; }
 
 .cart-section {
   display: flex;
   flex-direction: column;
+  position: sticky;
+  top: 12px;
 }
 
 .checkout-card {
-  height: 100%;
   display: flex;
   flex-direction: column;
   padding: 0;
+  max-height: calc(100vh - 140px);
+  overflow: hidden;
 }
 
-.checkout-card .card-header { padding: 20px; margin-bottom: 0; }
+.checkout-card .card-header { padding: 16px 20px; margin-bottom: 0; }
 
 .cart-items {
   flex: 1;
   overflow-y: auto;
-  padding: 0 20px;
+  padding: 0 16px;
+  -webkit-overflow-scrolling: touch;
 }
 
 .empty-cart {
-  height: 100%;
+  min-height: 120px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   color: var(--text-light);
 }
-.empty-icon { font-size: 3rem; margin-bottom: 12px; }
+.empty-icon { font-size: 2.5rem; margin-bottom: 10px; }
 
 .cart-item {
   display: flex;
   justify-content: space-between;
-  padding: 12px 0;
+  align-items: center;
+  padding: 10px 0;
   border-bottom: 1px solid var(--border-color);
+  gap: 8px;
 }
-.item-name { font-weight: 600; color: var(--text-main); }
-.item-price { font-size: 0.85rem; color: var(--text-muted); }
-.item-controls { text-align: end; }
-.item-qty { font-weight: 700; color: var(--primary); margin-inline-end: 12px; }
-.item-subtotal { font-weight: 700; }
+.item-name { font-weight: 600; color: var(--text-main); font-size: 0.9rem; }
+.item-price { font-size: 0.8rem; color: var(--text-muted); }
+.item-controls { text-align: end; flex-shrink: 0; }
+.item-qty { font-weight: 700; color: var(--primary); margin-inline-end: 10px; }
+.item-subtotal { font-weight: 700; font-size: 0.9rem; }
 
 .checkout-footer {
-  padding: 20px;
+  padding: 16px;
   background: var(--bg-muted);
   border-top: 1px solid var(--border-color);
   border-radius: 0 0 var(--radius-lg) var(--radius-lg);
@@ -494,30 +525,89 @@ export default {
 .summary-line {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   font-weight: 700;
 }
-.summary-line.total { font-size: 1.5rem; color: var(--text-main); }
+.summary-line.total { font-size: 1.3rem; color: var(--text-main); }
 .summary-line.remaining.warning { color: var(--danger); }
 
-.checkout-details { margin-bottom: 20px; }
+.checkout-details { margin-bottom: 16px; }
 .mb-0 { margin-bottom: 0; }
 .w-full { width: 100%; }
-.btn-xl { padding: 16px; font-size: 1.1rem; border-radius: var(--radius-lg); }
+.btn-xl { padding: 14px; font-size: 1rem; border-radius: var(--radius-lg); min-height: 52px; }
 
 .debt-warning {
   background: #fffbeb;
   color: #92400e;
   padding: 10px;
   border-radius: var(--radius-md);
-  margin-bottom: 15px;
+  margin-bottom: 12px;
   font-size: 0.85rem;
   font-weight: 600;
   border: 1px solid #fef3c7;
 }
 
+/* --- TABLET (≤ 1024px): stack layout --- */
 @media (max-width: 1024px) {
-  .pos-layout { grid-template-columns: 1fr; height: auto; }
-  .cart-section { height: 600px; }
+  .pos-layout {
+    grid-template-columns: 1fr;
+    min-height: auto;
+    gap: 16px;
+  }
+
+  .products-grid {
+    max-height: 45vh;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+
+  .cart-section {
+    position: static;
+  }
+
+  .checkout-card {
+    max-height: none;
+  }
+
+  .cart-items {
+    max-height: 240px;
+  }
+}
+
+/* --- MOBILE (≤ 768px) --- */
+@media (max-width: 768px) {
+  .products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 8px;
+    max-height: 40vh;
+  }
+
+  .product-card {
+    padding: 10px;
+    min-height: 76px;
+  }
+
+  .product-name { font-size: 0.82rem; }
+  .product-price { font-size: 0.9rem; }
+
+  .summary-line.total { font-size: 1.1rem; }
+
+  .checkout-footer {
+    padding: 12px;
+  }
+}
+
+/* --- SMALL MOBILE (≤ 480px) --- */
+@media (max-width: 480px) {
+  .products-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  .product-card {
+    padding: 8px;
+    border-radius: var(--radius-md);
+  }
+
+  .product-footer { display: none; } /* hide stock badges on tiny screens */
 }
 </style>

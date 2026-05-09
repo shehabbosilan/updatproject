@@ -17,6 +17,16 @@ const routes = [
     path: "/register",
     name: "register",
     component: () => import("../views/RegisterView.vue")
+  },
+  {
+    path: "/forgot-password",
+    name: "forgot-password",
+    component: () => import("../views/ForgotPasswordView.vue")
+  },
+  {
+    path: "/reset-password/:token",
+    name: "reset-password",
+    component: () => import("../views/ResetPasswordView.vue")
   }
 ];
 
@@ -30,7 +40,7 @@ router.beforeEach((to, from, next) => {
   
   if (to.meta.requiresAuth && !isAuthenticated) {
     next({ name: 'login' });
-  } else if ((to.name === 'login' || to.name === 'register') && isAuthenticated) {
+  } else if ((to.name === 'login' || to.name === 'register' || to.name === 'forgot-password' || to.name === 'reset-password') && isAuthenticated) {
     next({ name: 'home' });
   } else {
     next();

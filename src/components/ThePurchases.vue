@@ -2,80 +2,40 @@
   <main class="main-content">
     <div class="page-content">
       <div class="purchases-page">
-        <div
-          class="card-header"
-          style="
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-          "
-        >
+        <div class="purchases-header">
           <h1 class="page-title">{{ $t('purchases.title') }}</h1>
-          <div
-            class="totals-summary"
-            v-if="totals"
-            style="display: flex; gap: 20px"
-          >
+          <div class="totals-summary" v-if="totals">
             <div class="summary-item">
-              <span class="label">{{ $t('common.total') }}:</span>
-              <span class="value">{{ $t('common.egp') }} {{ totals.total.toFixed(2) }}</span>
+              <span class="sum-label">{{ $t('common.total') }}</span>
+              <span class="sum-value">{{ $t('common.egp') }} {{ totals.total.toFixed(2) }}</span>
             </div>
             <div class="summary-item">
-              <span class="label">{{ $t('common.paid') }}:</span>
-              <span class="value" style="color: #2ecc71"
-                >{{ $t('common.egp') }} {{ totals.paid.toFixed(2) }}</span
-              >
+              <span class="sum-label">{{ $t('common.paid') }}</span>
+              <span class="sum-value text-success">{{ $t('common.egp') }} {{ totals.paid.toFixed(2) }}</span>
             </div>
             <div class="summary-item">
-              <span class="label">{{ $t('common.remaining') }}:</span>
-              <span class="value" style="color: #e74c3c"
-                >{{ $t('common.egp') }} {{ totals.remaining.toFixed(2) }}</span
-              >
+              <span class="sum-label">{{ $t('common.remaining') }}</span>
+              <span class="sum-value text-danger">{{ $t('common.egp') }} {{ totals.remaining.toFixed(2) }}</span>
             </div>
           </div>
         </div>
 
         <div class="card">
           <!--  Filters -->
-          <div
-            class="filters-grid"
-            style="
-              display: grid;
-              grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-              gap: 15px;
-              margin-bottom: 20px;
-              padding: 15px;
-              background: #f8f9fa;
-              border-radius: 8px;
-            "
-          >
+          <div class="filters-grid">
             <div class="filter-group">
-              <label>{{ $t('sales.customer') }}</label>
+              <label class="form-label">{{ $t('sales.customer') }}</label>
               <input
                 type="text"
+                class="form-control"
                 :placeholder="$t('common.name') + ' / ' + $t('common.phone')"
                 v-model="filters.search"
                 @input="debouncedFetch"
-                style="
-                  width: 100%;
-                  padding: 8px;
-                  border: 1px solid #ddd;
-                  border-radius: 4px;
-                "
               />
             </div>
             <div class="filter-group">
-              <label>{{ $t('common.status') }}</label>
-              <select
-                v-model="filters.status"
-                @change="fetchPurchases"
-                style="
-                  width: 100%;
-                  padding: 8px;
-                  border: 1px solid #ddd;
-                  border-radius: 4px;
-                "
-              >
+              <label class="form-label">{{ $t('common.status') }}</label>
+              <select class="form-control" v-model="filters.status" @change="fetchPurchases">
                 <option value="all">{{ $t('purchases.any_status') }}</option>
                 <option value="PAID">{{ $t('common.paid') }}</option>
                 <option value="PARTIALLY PAID">{{ $t('common.status') }} ({{ $t('common.remaining') }})</option>
@@ -83,38 +43,17 @@
               </select>
             </div>
             <div class="filter-group">
-              <label>{{ $t('common.from') }}</label>
-              <input
-                type="date"
-                v-model="filters.fromDate"
-                @change="fetchPurchases"
-                style="
-                  width: 100%;
-                  padding: 8px;
-                  border: 1px solid #ddd;
-                  border-radius: 4px;
-                "
-              />
+              <label class="form-label">{{ $t('common.from') }}</label>
+              <input type="date" class="form-control" v-model="filters.fromDate" @change="fetchPurchases" />
             </div>
             <div class="filter-group">
-              <label>{{ $t('common.to') }}</label>
-              <input
-                type="date"
-                v-model="filters.toDate"
-                @change="fetchPurchases"
-                style="
-                  width: 100%;
-                  padding: 8px;
-                  border: 1px solid #ddd;
-                  border-radius: 4px;
-                "
-              />
+              <label class="form-label">{{ $t('common.to') }}</label>
+              <input type="date" class="form-control" v-model="filters.toDate" @change="fetchPurchases" />
             </div>
           </div>
 
-          <!--  Table -->
           <div class="table-container">
-            <table class="table">
+            <table class="data-table">
               <thead>
                 <tr>
                   <th>{{ $t('purchases.invoice_id') }}</th>
@@ -122,49 +61,26 @@
                   <th>{{ $t('common.total') }}</th>
                   <th>{{ $t('common.paid') }}</th>
                   <th>{{ $t('common.remaining') }}</th>
-
                   <th>{{ $t('common.date') }}</th>
                   <th>{{ $t('common.actions') }}</th>
                 </tr>
               </thead>
-
               <tbody>
                 <tr v-if="purchases.length === 0">
-                  <td colspan="8" style="text-align: center; padding: 30px">
-                    {{ $t('common.no_records') }}
-                  </td>
+                  <td colspan="7" class="text-center">{{ $t('common.no_records') }}</td>
                 </tr>
-
                 <tr v-for="sale in purchases" :key="sale.id">
-                  <td>#{{ sale.id }}</td>
-                  <td>{{ sale.customer_name }}</td>
+                  <td><span class="badge badge-secondary">#{{ sale.id }}</span></td>
+                  <td class="font-bold">{{ sale.customer_name }}</td>
                   <td>{{ $t('common.egp') }} {{ sale.total.toFixed(2) }}</td>
-                  <td style="color: #2ecc71">{{ $t('common.egp') }} {{ sale.paid.toFixed(2) }}</td>
-                  <td
-                    :style="{
-                      color: sale.remaining > 0 ? '#e74c3c' : 'inherit',
-                      fontWeight: sale.remaining > 0 ? 'bold' : 'normal',
-                    }"
-                  >
+                  <td class="text-success font-bold">{{ $t('common.egp') }} {{ sale.paid.toFixed(2) }}</td>
+                  <td :class="sale.remaining > 0 ? 'text-danger font-bold' : 'text-muted'">
                     {{ $t('common.egp') }} {{ sale.remaining.toFixed(2) }}
                   </td>
-
-                  <td>{{ formatDate(sale.date) }}</td>
+                  <td class="text-muted">{{ formatDate(sale.date) }}</td>
                   <td class="table-actions">
-                    <button
-                      class="btn-icon"
-                      @click="viewInvoice(sale.id)"
-                      :title="$t('common.view')"
-                    >
-                      👁️
-                    </button>
-                    <button
-                      class="btn-icon"
-                      @click="printInvoice(sale.id)"
-                      :title="$t('common.print')"
-                    >
-                      🖨️
-                    </button>
+                    <button class="btn-icon" @click="viewInvoice(sale.id)" :title="$t('common.view')">👁️</button>
+                    <button class="btn-icon" @click="printInvoice(sale.id)" :title="$t('common.print')">🖨️</button>
                   </td>
                 </tr>
               </tbody>
@@ -183,21 +99,9 @@
         </div>
 
         <div class="modal-body" v-if="currentInvoice">
-          <div
-            class="invoice-info"
-            style="
-              margin-bottom: 20px;
-              display: grid;
-              grid-template-columns: 1fr 1fr;
-              gap: 10px;
-            "
-          >
-            <div>
-              <strong>{{ $t('sales.customer') }}:</strong> {{ currentInvoice.sale.customer_name }}
-            </div>
-            <div>
-              <strong>{{ $t('common.date') }}:</strong> {{ formatDate(currentInvoice.sale.date) }}
-            </div>
+          <div class="invoice-info">
+            <div><strong>{{ $t('sales.customer') }}:</strong> {{ currentInvoice.sale.customer_name }}</div>
+            <div><strong>{{ $t('common.date') }}:</strong> {{ formatDate(currentInvoice.sale.date) }}</div>
           </div>
 
           <table class="table mini-table">
@@ -219,47 +123,18 @@
             </tbody>
           </table>
 
-          <div
-            class="invoice-summary"
-            style="
-              margin-top: 20px;
-              border-top: 2px solid #eee;
-              padding-top: 15px;
-            "
-          >
-            <div
-              style="
-                display: flex;
-                justify-content: space-between;
-                margin-bottom: 5px;
-              "
-            >
+          <div class="invoice-summary">
+            <div class="inv-line">
               <span>{{ $t('common.total') }}:</span>
               <strong>{{ $t('common.egp') }} {{ currentInvoice.sale.total.toFixed(2) }}</strong>
             </div>
-            <div
-              style="
-                display: flex;
-                justify-content: space-between;
-                margin-bottom: 5px;
-                color: #2ecc71;
-              "
-            >
+            <div class="inv-line text-success">
               <span>{{ $t('common.paid') }}:</span>
               <strong>{{ $t('common.egp') }} {{ currentInvoice.sale.paid.toFixed(2) }}</strong>
             </div>
-            <div
-              style="
-                display: flex;
-                justify-content: space-between;
-                color: #e74c3c;
-                font-weight: bold;
-              "
-            >
+            <div class="inv-line text-danger font-bold">
               <span>{{ $t('common.remaining') }}:</span>
-              <strong
-                >{{ $t('common.egp') }} {{ currentInvoice.sale.remaining.toFixed(2) }}</strong
-              >
+              <strong>{{ $t('common.egp') }} {{ currentInvoice.sale.remaining.toFixed(2) }}</strong>
             </div>
           </div>
         </div>
@@ -334,15 +209,17 @@ export default {
         const res = await fetch(`${process.env.VUE_APP_API_URL}/purchases/${id}`);
         const data = await res.json();
         const isRtl = document.documentElement.getAttribute("dir") === "rtl";
+        const storeName = localStorage.getItem('store_name') || this.$t('common.app_name');
 
         const printWindow = window.open("", "", "width=500,height=700");
         const html = `
-          <html>
+          <html dir="${isRtl ? 'rtl' : 'ltr'}">
             <head>
               <title>${this.$t('purchases.invoice_id')} #${data.sale.id}</title>
               <style>
-                body { font-family: Arial; padding: 20px; color: #333; direction: ${isRtl ? 'rtl' : 'ltr'}; }
+                body { font-family: sans-serif; padding: 20px; color: #333; direction: ${isRtl ? 'rtl' : 'ltr'}; }
                 .header { text-align: center; margin-bottom: 20px; }
+                .store-name { font-size: 24px; font-weight: 800; margin-bottom: 5px; color: #1e293b; }
                 .line { border-top: 1px dashed #000; margin: 10px 0; }
                 table { width: 100%; border-collapse: collapse; }
                 th, td { padding: 8px; border-bottom: 1px solid #ddd; text-align: ${isRtl ? 'right' : 'left'}; }
@@ -352,10 +229,10 @@ export default {
             </head>
             <body>
               <div class="header">
-                <h2>🌾 ${this.$t('common.app_name')}</h2>
+                <div class="store-name">🌾 ${storeName}</div>
                 <p>${this.$t('purchases.invoice_id')} #${data.sale.id}</p>
               </div>
-              <div class="info">
+              <div class="info">class="info">
                 <div><strong>${this.$t('sales.customer')}:</strong> ${data.sale.customer_name}</div>
                 <div><strong>${this.$t('common.date')}:</strong> ${this.formatDate(data.sale.date)}</div>
               </div>
@@ -410,103 +287,155 @@ export default {
 </script>
 
 <style scoped>
-.badge {
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.75em;
-  font-weight: bold;
-}
-.badge-success {
-  background: #dcfce7;
-  color: #22c55e;
-}
-.badge-warning {
-  background: #fef3c7;
-  color: #92400e;
-}
-.badge-danger {
-  background: #fee2e2;
-  color: #ef4444;
+/* ── Page header ──────────────────────────────── */
+.purchases-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 16px;
 }
 
-.totals-summary .summary-item {
+.totals-summary {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.summary-item {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
+  min-width: 0;
 }
-.totals-summary .label {
-  font-size: 0.8em;
-  color: #666;
-}
-.totals-summary .value {
-  font-size: 1.1em;
-  font-weight: bold;
+.sum-label { font-size: 0.78rem; color: var(--text-muted); font-weight: 600; white-space: nowrap; }
+.sum-value  { font-size: 1rem;   font-weight: 800; white-space: nowrap; }
+
+/* ── Filters ──────────────────────────────────── */
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 14px;
+  background: var(--bg-muted);
+  border-radius: var(--radius-md);
 }
 
-.filter-group label {
-  display: block;
-  font-size: 0.85em;
-  color: #555;
-  margin-bottom: 4px;
-}
+/* ── Table utilities ──────────────────────────── */
+.text-success { color: var(--success); }
+.text-danger  { color: var(--danger); }
+.text-muted   { color: var(--text-muted); }
+.font-bold    { font-weight: 700; }
+.text-center  { text-align: center; }
+.table-actions { display: flex; gap: 6px; }
 
+.btn-icon {
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 5px 8px;
+  min-width: 34px;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-icon:hover { background: var(--bg-muted); }
+
+/* ── Invoice modal ────────────────────────────── */
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 2000;
+  padding: 16px;
 }
-.invoice-modal {
+.modal-card {
   background: white;
-  padding: 25px;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 600px;
-  max-height: 80vh;
-  overflow-y: auto;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-width: 580px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #eee;
-  margin-bottom: 15px;
-  padding-bottom: 10px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
 }
 .close-btn {
-  background: none;
-  border: none;
-  font-size: 1.5em;
-  cursor: pointer;
+  background: none; border: none; font-size: 1.5rem; cursor: pointer;
+  min-width: 34px; min-height: 34px;
 }
-.mini-table th {
-  background: #f8f9fa;
-  font-size: 0.9em;
-}
-.mini-table td {
-  font-size: 0.9em;
+.modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+  -webkit-overflow-scrolling: touch;
 }
 .modal-footer {
-  margin-top: 20px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--border-color);
   display: flex;
   justify-content: flex-end;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
-.btn-icon {
-  background: none;
-  border: none;
-  font-size: 1.2em;
-  cursor: pointer;
-  padding: 5px;
-  border-radius: 4px;
+/* ── Invoice view ─────────────────────────────── */
+.invoice-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: var(--bg-muted);
+  border-radius: var(--radius-md);
 }
-.btn-icon:hover {
-  background: #eee;
+
+.invoice-summary {
+  margin-top: 16px;
+  border-top: 2px solid var(--border-color);
+  padding-top: 12px;
+}
+.inv-line {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 0.95rem;
+}
+
+.mini-table th { background: var(--bg-muted); font-size: 0.88rem; }
+.mini-table td { font-size: 0.88rem; }
+
+/* ── Badge ────────────────────────────────────── */
+.badge { padding: 4px 8px; border-radius: var(--radius-sm); font-size: 0.75rem; font-weight: 700; }
+.badge-secondary { background: var(--bg-muted); color: var(--text-muted); }
+
+/* ── Responsive ───────────────────────────────── */
+@media (max-width: 768px) {
+  .purchases-header { flex-direction: column; }
+  .totals-summary { gap: 10px; justify-content: flex-start; }
+  .summary-item { align-items: flex-start; }
+  .invoice-info { grid-template-columns: 1fr; }
+  .filters-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 480px) {
+  .filters-grid { grid-template-columns: 1fr; }
+  .modal-footer { justify-content: stretch; }
+  .modal-footer .btn { flex: 1; }
 }
 </style>

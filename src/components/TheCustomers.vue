@@ -10,13 +10,14 @@
           <div class="search-bar">
             <input
               type="text"
+              class="form-control"
               v-model="searchQuery"
               :placeholder="$t('common.search_placeholder')"
             />
           </div>
 
           <div class="table-container">
-            <table class="table">
+            <table class="data-table">
               <thead>
                 <tr>
                   <th>{{ $t('customers.name') }}</th>
@@ -70,9 +71,10 @@
         </p>
 
         <div class="form-group" style="margin-top: 15px">
-          <label>{{ $t('customers.payment_amount') }}</label>
+          <label class="form-label">{{ $t('customers.payment_amount') }}</label>
           <input
             type="number"
+            class="form-control"
             v-model.number="paymentAmount"
             :max="selectedCustomer.total_debt"
             :placeholder="$t('customers.enter_amount')"
@@ -176,42 +178,39 @@ export default {
 </script>
 
 <style scoped>
+.search-bar { margin-bottom: 16px; }
+
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   background: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 2000;
+  padding: 16px;
 }
 .modal-card {
   background: white;
-  padding: 25px;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 400px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-}
-.form-group {
-  margin-bottom: 15px;
-}
-.form-group label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
-}
-.form-group input {
+  padding: 24px;
+  border-radius: var(--radius-lg);
   width: 100%;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  max-width: 420px;
+  box-shadow: var(--shadow-lg);
 }
-.btn-sm {
-  padding: 5px 10px;
-  font-size: 0.9em;
+.modal-card h3 {
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.modal-actions {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.modal-actions .btn { flex: 1; }
+
+@media (max-width: 480px) {
+  .modal-actions { flex-direction: column; }
 }
 </style>
